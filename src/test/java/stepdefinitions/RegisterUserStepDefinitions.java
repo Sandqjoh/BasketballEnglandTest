@@ -125,6 +125,26 @@ public class RegisterUserStepDefinitions {
         confirmButton.click();
     }
 
+
+
+    @Then("ska en bekräftelse på lyckad registrering visas")
+
+    public void skaEnBekraftelseParLyckadRegistreringVisas() {
+
+        // Wait for the success message or confirmation page to appear
+
+        WebElement successMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(
+
+                By.cssSelector("h2.bold.gray.text-center.margin-bottom-40")));
+
+        // Assert that the success message is displayed
+
+        assert successMessage.isDisplayed();
+
+    }
+
+
+
     // Kontrollera att ett felmeddelande visas
     @Then("ska jag se ett felmeddelande")
     public void skaJagSeEttFelmeddelande() {
