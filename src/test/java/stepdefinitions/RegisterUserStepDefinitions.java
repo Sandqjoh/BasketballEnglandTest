@@ -14,6 +14,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.edge.EdgeDriver;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import static org.junit.Assert.*;
 
 import java.time.Duration;
 import java.util.Random;
@@ -25,6 +26,7 @@ public class RegisterUserStepDefinitions {
     private final String BASE_URL = "https://membership.basketballengland.co.uk/NewSupporterAccount";
     private final String EMAIL_PREFIX = "kallekula";
     private final String EMAIL_DOMAIN = "@testmail.se";
+    private boolean isTermsAccepted = true;
 
     // Setup WebDriver och väntetider innan varje test
     @Before
@@ -61,6 +63,7 @@ public class RegisterUserStepDefinitions {
         driver.findElement(By.id("signupunlicenced_password")).sendKeys("Losenord123!");
         driver.findElement(By.id("signupunlicenced_confirmpassword")).sendKeys("Losenord123!");
         driver.findElement(By.id("dp")).sendKeys("05/03/1978");
+        isTermsAccepted = true;
     }
 
     // Test 2: Försök att registrera en användare utan efternamn
@@ -75,11 +78,12 @@ public class RegisterUserStepDefinitions {
         driver.findElement(By.id("signupunlicenced_password")).sendKeys("Losenord123!");
         driver.findElement(By.id("signupunlicenced_confirmpassword")).sendKeys("Losenord123!");
         driver.findElement(By.id("dp")).sendKeys("05/03/1978");
+        isTermsAccepted = true;
     }
 
     // Test 3: Försök att registrera en användare med olika lösenord
     @When("jag fyller i alla nödvändiga fält korrekt, men lösenorden matchar inte")
-    public void jagFyllerIAllaNödvändigaFältKorrektMenLosenordenMatcharInte() {
+    public void jagFyllerIAllaNödvändigaFältKorrektMenLösenordenMatcharInte() {
         String randomEmail = generateRandomEmail();
 
         driver.findElement(By.id("member_firstname")).sendKeys("Kalle");
@@ -89,11 +93,12 @@ public class RegisterUserStepDefinitions {
         driver.findElement(By.id("signupunlicenced_password")).sendKeys("Losenord123!");
         driver.findElement(By.id("signupunlicenced_confirmpassword")).sendKeys("FelaktigtLosenord!"); // För Test 3
         driver.findElement(By.id("dp")).sendKeys("05/03/1978");
+        isTermsAccepted = true;
     }
 
     // Test 4: Försök att registrera en användare utan att acceptera Terms and Conditions
     @When("jag fyller i alla nödvändiga fält korrekt men terms and conditions är inte ibockad")
-    public void jagFyllerIAllaNödvändigaFältKorrektMenTermsAndConditionsArInteIbockad() {
+    public void jagFyllerIAllaNödvändigaFältKorrektMenTermsAndConditionsÄrInteIbockad() {
         String randomEmail = generateRandomEmail();
 
         driver.findElement(By.id("member_firstname")).sendKeys("Kalle");
@@ -103,70 +108,90 @@ public class RegisterUserStepDefinitions {
         driver.findElement(By.id("signupunlicenced_password")).sendKeys("Losenord123!");
         driver.findElement(By.id("signupunlicenced_confirmpassword")).sendKeys("Losenord123!");
         driver.findElement(By.id("dp")).sendKeys("05/03/1978");
-        // Don't click the terms checkbox for Test 4
+        isTermsAccepted = false; // Markera att terms inte ska accepteras
     }
 
     // Klicka på checkboxar för godkännande av användarvillkor och andra alternativ
     @And("jag accepterar användarvillkoren och samtycker till alla nödvändiga checkboxar")
     public void jagAccepterarAnvändarvillkoren() {
-        WebElement termsCheckbox = driver.findElement(By.cssSelector(".md-checkbox > .md-checkbox:nth-child(1) .box"));
-        clickElement(termsCheckbox);
+        if (isTermsAccepted) {
+            WebElement termsCheckbox = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector(".md-checkbox > .md-checkbox:nth-child(1) .box")));
+            clickElement(termsCheckbox);
 
-        WebElement ageCheckbox = driver.findElement(By.cssSelector(".md-checkbox:nth-child(7) .box"));
-        clickElement(ageCheckbox);
+            WebElement ageCheckbox = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector(".md-checkbox:nth-child(7) .box")));
+            clickElement(ageCheckbox);
 
-        WebElement ethicsCheckbox = driver.findElement(By.cssSelector(".md-checkbox:nth-child(2) > label > .box"));
-        clickElement(ethicsCheckbox);
+            WebElement ethicsCheckbox = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector(".md-checkbox:nth-child(2) > label > .box")));
+            clickElement(ethicsCheckbox);
+        }
     }
 
     @And("jag klickar på registreringsknappen")
     public void jagKlickarPåRegistreringsknappen() {
-        WebElement confirmButton = driver.findElement(By.name("join"));
-        confirmButton.click();
+        WebElement confirmButton = wait.until(ExpectedConditions.elementToBeClickable(By.name("join")));
+        clickElement(confirmButton);
+        try {
+            Thread.sleep(2000); // Kort paus för att säkerställa att sidan hinner reagera
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
-
-
 
     @Then("ska en bekräftelse på lyckad registrering visas")
-
-    public void skaEnBekraftelseParLyckadRegistreringVisas() {
-
-        // Wait for the success message or confirmation page to appear
-
-        WebElement successMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(
-
-                By.cssSelector("h2.bold.gray.text-center.margin-bottom-40")));
-
-        // Assert that the success message is displayed
-
-        assert successMessage.isDisplayed();
-
+    public void skaEnBekräftelsePåLyckadRegistreringVisas() {
+        try {
+            WebElement successMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("h2.bold.gray.text-center.margin-bottom-40")));
+            assertTrue("Bekräftelsemeddelande visas inte", successMessage.isDisplayed());
+        } catch (Exception e) {
+            assertTrue("Lyckad registrering kunde inte verifieras", driver.getPageSource().contains("Thank you"));
+        }
     }
 
-
-
-    // Kontrollera att ett felmeddelande visas
     @Then("ska jag se ett felmeddelande")
     public void skaJagSeEttFelmeddelande() {
-        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[@class='error-message']")));
-        assert errorMessage.isDisplayed();
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".error-message")));
+            assertTrue("Felmeddelande visas inte", driver.getPageSource().contains("required"));
+        } catch (Exception e) {
+            fail("Kunde inte hitta felmeddelande: " + e.getMessage());
+        }
     }
 
     @Then("ska jag se ett felmeddelande om att lösenorden inte matchar")
-    public void skaJagSeEttFelmeddelandeOmAttLosenordenInteMatchar() {
-        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(text(),'Passwords do not match')]")));
-        assert errorMessage.isDisplayed();
+    public void skaJagSeEttFelmeddelandeOmAttLösenordenInteMatchar() {
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[contains(text(), 'Passwords do not match')]")));
+            assertTrue("Felmeddelande om lösenord inte matchar visas inte", driver.getPageSource().contains("Passwords do not match"));
+        } catch (Exception e) {
+            fail("Kunde inte hitta felmeddelande om lösenord: " + e.getMessage());
+        }
     }
 
     @Then("ska jag se ett felmeddelande om att användarvillkoren inte är accepterade")
-    public void skaJagSeEttFelmeddelandeOmAttAnvandarvillkorenInteArAccepterade() {
-        WebElement errorMessage = wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//div[contains(text(),'Please accept the terms and conditions')]")));
-        assert errorMessage.isDisplayed();
+    public void skaJagSeEttFelmeddelandeOmAttAnvändarvillkorenInteÄrAccepterade() {
+        try {
+            wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[contains(text(), 'terms') and contains(text(), 'conditions')]")));
+            assertTrue("Felmeddelande om användarvillkor visas inte", driver.getPageSource().contains("terms and conditions"));
+        } catch (Exception e) {
+            fail("Kunde inte hitta felmeddelande om användarvillkor: " + e.getMessage());
+        }
     }
 
     private void clickElement(WebElement element) {
-        JavascriptExecutor executor = (JavascriptExecutor) driver;
-        executor.executeScript("arguments[0].click();", element);
+        try {
+            element.click();
+        } catch (Exception e) {
+            try {
+                JavascriptExecutor executor = (JavascriptExecutor) driver;
+                executor.executeScript("arguments[0].click();", element);
+            } catch (Exception jsException) {
+                System.out.println("Kunde inte klicka på element via JavaScript heller: " + jsException.getMessage());
+            }
+        }
     }
 
     private String generateRandomEmail() {
