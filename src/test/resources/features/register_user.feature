@@ -21,6 +21,7 @@ Feature: Registrering av ny användare
     And jag klickar på registreringsknappen
     Then ska jag se ett felmeddelande om att lösenorden inte matchar
 
+
   Scenario: Jag fyller i alla nödvändiga fält korrekt men terms and conditions är inte ibockad
     Given att jag är på registreringssidan för nya användare
     When jag fyller i alla nödvändiga fält korrekt, men terms and conditions är inte ibockad

@@ -194,6 +194,7 @@ public class RegisterUserStepDefinitions {
         }
     }
 
+
     private String generateRandomEmail() {
         Random random = new Random();
         int randomNum = random.nextInt(10000);
